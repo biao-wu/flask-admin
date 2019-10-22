@@ -52,11 +52,9 @@
             {% for field in add_btn %}
               <div class="form-group">
                 {{ field.label }}
-                {% for validator in field.validators %}
-                  {% if "required" in validator.field_flags %}
-                    <span style="color: red;font-size: 16px">*</span>
-                  {% endif %}
-                {% endfor %}
+                {% if field.flags.required %}
+                  <span style="color: red;font-size: 16px">*</span>
+                {% endif %}
                 {{ field }}
                 <span class="text-danger"></span>
               </div>
@@ -71,21 +69,25 @@
     </div>
   {% endif %}
 
-  {{ options.extra }}
+  {% if options.extra %}
+    {% include options.extra %}
+  {% endif %}
 
 {% endblock %}
 
 {% block js %}
+  {% if options.js %}
+    <script src="/static/{{ options.js }}"></script>
+  {% endif %}
+
   <script>
     // 解决ajax发送数组参数会多[] 问题
     window.ajaxOptions = {
-      traditional: true
+      traditional: true,
+      beforeSend: function (xhr) {
+        NProgress.start();
+      }
     };
-
-    {% if options %}
-      {{ options.formatter|safe }}
-      {{ options.events|safe }}
-    {% endif %}
 
     let $table = $('#table');
 
@@ -122,7 +124,18 @@
             }
           {% endif %}
 
-        ]
+        ],
+
+        responseHandler: function (response) {
+          NProgress.done();
+          if (response.code === 200) {
+            return response.data;
+          } else {
+            alert(response.msg);
+            return false;
+          }
+
+        }
       });
     }
 
@@ -160,23 +173,32 @@
           url: '{{ add_url }}',
           data: {
             form_class: '{{ add_btn.__class__.__name__ }}',
-        {% for field in add_btn %}
-          {{ field.name }}: $('#{{ field.name }}').val(),
-        {% endfor %}
-      },
-        success:response => {
-          if (response.code == 200) {
-            alert(response.msg);
-            $('#add_btn').modal('hide');
-            $('#add_btn .form-group').children("input").val("");
-            $table.bootstrapTable('refresh');
-          } else {
-            let errorMsgs = response.data
-            for (let i in errorMsgs) {
-              $(`#${i}`).next().text(errorMsgs[i]);
+            {% for field in add_btn %}
+              {# # TODO 这里的判断可能会少 #}
+              {% if field.type=="BooleanField" %}
+                {{ field.name }}: $('#{{ field.name }}').is(':checked'),
+              {% else %}
+                {{ field.name }}: $('#{{ field.name }}').val(),
+              {% endif %}
+            {% endfor %}
+          },
+          beforeSend:function (xhr) {
+            NProgress.start();
+          },
+          success:response => {
+            NProgress.done();
+            if (response.code == 200) {
+              alert(response.msg);
+              $('#add_btn').modal('hide');
+              $('#add_btn .form-group').children("input").val("");
+              $table.bootstrapTable('refresh');
+            } else {
+              let errorMsgs = response.data
+              for (let i in errorMsgs) {
+                $(`#${i}`).next().text(errorMsgs[i]);
+              }
             }
           }
-        }
       })
 
       }

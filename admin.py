@@ -3,7 +3,7 @@
 import sys
 
 import wtforms
-from flask import jsonify, request
+from flask import request
 from flask_wtf import FlaskForm
 from wtforms import validators
 
@@ -14,15 +14,16 @@ from king_admin.service.core import BaseView
 
 
 class StaffForm(FlaskForm):
-    username = wtforms.StringField('Username', [validators.Length(min=4, max=25)], render_kw={"class": "form-control"})
-    email = wtforms.StringField('Email Address', [validators.Length(min=6, max=35)],
+    username = wtforms.StringField('用户名', [validators.Length(min=4, max=25)], render_kw={"class": "form-control"})
+    email = wtforms.StringField('邮箱地址', [validators.Length(min=6, max=35), validators.Email()],
                                 render_kw={"class": "form-control"})
-    password = wtforms.PasswordField('New Password', [
+    sex = wtforms.SelectField("性别", choices=[(0, "男"), (1, "女")], render_kw={"class": "form-control"}, coerce=int)
+    password = wtforms.PasswordField('密码', [
         validators.DataRequired(),
         validators.EqualTo('confirm', message='两次密码必须一致')
     ], render_kw={"class": "form-control"})
-    confirm = wtforms.PasswordField('Repeat Password', render_kw={"class": "form-control"})
-    accept_tos = wtforms.BooleanField('I accept the TOS', [validators.DataRequired()])
+    confirm = wtforms.PasswordField('确认密码', render_kw={"class": "form-control"})
+    accept_tos = wtforms.BooleanField('我同意以上协议', [validators.DataRequired()])
 
 
 class Index(BaseView):
@@ -39,32 +40,8 @@ class Index(BaseView):
         fields.MulSelectField("编辑人", "editors", source=[(0, "普通人"), (1, "人人"), (2, "普通人11"), (3, "人人11")])
     ]
     options = {
-        "formatter": '''
-         function operateFormatter(value, row, index) {
-            return [
-              '<a class="like" href="javascript:void(0)" title="Like">',
-              '<i class="fa fa-heart"></i>',
-              '</a>  ',
-              '<a class="remove" href="javascript:void(0)" title="Remove">',
-              '<i class="fa fa-trash"></i>',
-              '</a>'
-            ].join('')
-          }
-        ''',
-        "events": '''
-        let operateEvents = {
-            'click .like': function (e, value, row, index) {
-              alert('You click like action, row: ' + JSON.stringify(row))
-            },
-            'click .remove': function (e, value, row, index) {
-              $table.bootstrapTable('remove', {
-                field: 'id',
-                values: [row.id]
-              })
-            }
-          }
-        ''',
-        "extra": ""
+        "js": "js/option.js",
+        "extra": "demo.html"
     }
     add_btn = StaffForm
     add_url = data_url + "/add"
@@ -4094,7 +4071,7 @@ def index_data():
         "rows": rows
     }
 
-    return jsonify(data)
+    return json_response(200, "查询成功", data)
 
 
 @admin.route("/index/data/add")

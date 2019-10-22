@@ -36,10 +36,10 @@ class Base(MethodView):
     def get_options(self):
         if self.options:
             if isinstance(self.options, dict):
-                if all(["formatter" in self.options, "events" in self.options, "extra" in self.options]):
+                if all(["js" in self.options, "extra" in self.options]):
                     return self.options
                 else:
-                    raise ValueError(f"类{self.__class__.__name__}中options字典必须包含formatter,events,extra三个键")
+                    raise ValueError(f"类{self.__class__.__name__}中options字典必须包含js,extra两个键")
 
             raise TypeError(f"{self.__class__.__name__}中options属性必须是dict类型")
 
@@ -52,46 +52,28 @@ class BaseView(Base):
     checkbox = False  # 是否有checkbox
     search_fields = []  # 搜索的字段
     data_url = ""  # 表格数据请求地址
-    options = {}  # 每行可操作按钮 {"formatter":xxx,"events":xxx,"extra":xxx}
+    options = {}  # 每行可操作按钮
     """
     options key示意：
-    1.formatter
-        类型：script代码
+    1.js
+        类型：js代码文件路径 通过static导入
         描述：用于展示表格列显示的内容
-    2.events
-        类型：script代码
-        描述：用于触发表格操作列按钮的事件
-    3.extra
-        类型：html代码
-        描述：用于触发事件时，所需的html
+        注意：js文件
+            1. function operateFormatter(value, row, index) {
+                    return '<button type="submit" class="btn btn-warning btn-sm" id="btn_change">修改</button>'
+                }
+            2. let operateEvents = {
+                  'click #btn_change': function (e, value, row, index) {
+                    ...
+                  }
+                };
+    2.extra
+        类型：html代码文件路径 通过include导入
+        描述：用于触发事件时，所需的html，比如模态对话框
     options示例：
     options = {
-        "formatter": '''
-         function operateFormatter(value, row, index) {
-            return [
-              '<a class="like" href="javascript:void(0)" title="Like">',
-              '<i class="fa fa-heart"></i>',
-              '</a>  ',
-              '<a class="remove" href="javascript:void(0)" title="Remove">',
-              '<i class="fa fa-trash"></i>',
-              '</a>'
-            ].join('')
-          }
-        ''',
-        "events": '''
-        let operateEvents = {
-            'click .like': function (e, value, row, index) {
-              alert('You click like action, row: ' + JSON.stringify(row))
-            },
-            'click .remove': function (e, value, row, index) {
-              $table.bootstrapTable('remove', {
-                field: 'id',
-                values: [row.id]
-              })
-            }
-          }
-        ''',
-        "extra": ""
+        "js": "js/option.js",
+        "extra": "demo.html"
     }
     """
     add_btn = False  # 显示添加按钮
